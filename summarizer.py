@@ -6,6 +6,7 @@ from gtts import gTTS
 from groq import Groq
 import json
 from dotenv import load_dotenv
+from transcript import get_transcript_from_id
 
 load_dotenv()
 
@@ -45,8 +46,9 @@ def extract_transcript(video_url):
         )
 
         video_id = video_url.split("v=")[1]
-        transcript = ytt_api.get_transcript(video_id)
-        full_text = " ".join([entry["text"] for entry in transcript])
+        full_text = get_transcript_from_id(video_id)
+        # transcript = ytt_api.get_transcript(video_id)
+        # full_text = " ".join([entry["text"] for entry in transcript])
         return full_text[:16000] if len(full_text) > 16000 else full_text
     except Exception as e:
         print(f"Transcript unavailable: {e}")
@@ -57,7 +59,7 @@ def summarize(transcript: str, style: str) -> str:
     messages = [
         {
             "role": "system",
-            "content": "You are an expert assistant for summarizing YouTube videos"
+            "content": "You are an expert assistant for summarizing YouTube videos.Generate a highly detailed summary of this YouTube transcript in a style.Include all key points, main ideas, specific examples, accurate names, plot twists, and the overall tone. Ensure the summary is comprehensive and engaging"
                     "Adjust the output length and detail based on the user's requested style: "
                     "'short' (100-200 words for summaries), "
                     "'concise' (200-300 words for summaries), "
@@ -66,7 +68,7 @@ def summarize(transcript: str, style: str) -> str:
         },
         {
             "role": "user",
-            "content": f"Process this transcript in {style} style: {transcript[:1000]}..."
+            "content": f"Process this transcript from a video in {style} style: {transcript[:1000]}..."
         }
     ]
     response = groq_client.chat.completions.create(
@@ -249,5 +251,4 @@ def summarize_youtube_video(query, summary_style="concise", tts_enabled=False):
         "sentiment": sentiment,
         "thumbnail_url": thumbnail_url
     }
-    print(f"Result: {result}")
     return result
