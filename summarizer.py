@@ -18,12 +18,6 @@ PROXY_PASSWORD = os.getenv("PROXY_PASSWORD")
 
 youtube = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 groq_client = Groq(api_key=GROQ_API_KEY)
-ytt_api = YouTubeTranscriptApi(
-    proxy_config=WebshareProxyConfig(
-        proxy_username=PROXY_USERNAME,
-        proxy_password=PROXY_PASSWORD,
-    )
-)
 
 
 def search_youtube_video(query):
@@ -43,9 +37,15 @@ def search_youtube_video(query):
 
 def extract_transcript(video_url):
     try:
+        ytt_api = YouTubeTranscriptApi(
+            proxy_config=WebshareProxyConfig(
+                proxy_username=PROXY_USERNAME,
+                proxy_password=PROXY_PASSWORD,
+            )
+        )
+
         video_id = video_url.split("v=")[1]
         transcript = ytt_api.get_transcript(video_id)
-        # transcript = ytt_api.fetch(video_id)
         full_text = " ".join([entry["text"] for entry in transcript])
         return full_text[:16000] if len(full_text) > 16000 else full_text
     except Exception as e:
@@ -97,15 +97,11 @@ def analyze_sentiment(transcript: str, style: str) -> str:
         {
             "role": "system",
             "content": "You are an expert assistant for analyzing sentiment of YouTube videos  "
-                    "Adjust the output length and detail based on the user's requested style: "
-                    "'short' (50-100 words for sentiment analyses), "
-                    "'concise' (100-150 words for sentiment analyses), "
-                    "or 'detailed' (250+ words for sentiment analyses). "
-                    "Default to 'concise' if no style is specified."
+                    "Respond with a single word describing the sentiment"
         },
         {
             "role": "user",
-            "content": f"Process this transcript in {style} style: {transcript[:1000]}..."
+            "content": f"Process this transcript: {transcript[:1000]}..."
         }
     ]
     response = groq_client.chat.completions.create(
